@@ -1,0 +1,147 @@
+================================================================
+ MM3（重装机兵3）网页联机对战平台 · 服务器版
+================================================================
+
+两个远端玩家用浏览器打开同一个网页，各自控制 1P / 2P，
+模拟器跑在服务器上，两个实例之间走 melonDS 的 LocalMP（同进程共享内存），
+所以联机延迟≈0；玩家之间只传“画面 + 声音 + 按键”。
+
+
+----------------------------------------------------------------
+ 一、目录结构
+----------------------------------------------------------------
+  config.ini            配置（端口、画面质量、帧率、路径）★改这里
+  start.sh              Linux 一键启动
+  start.bat             Windows 一键启动
+  platform/             网页服务（Node.js，含依赖，无需 npm install）
+  emulator/
+    linux-arm64/melonDS   预编译的 Linux ARM64 模拟器宿主
+    linux-x86_64/melonDS  预编译的 Linux x86_64 模拟器宿主
+    （start.sh 会按 uname -m 自动选择；config.ini 里 exe 留空即可）
+  roms/
+    mm3cn.nds           游戏 ROM（汉化二分 p2 版，可联机）
+    mm3cn.sav           1P 存档
+    mm3cn.sav.2         2P 存档
+  source/
+    melonDS-src.tar.gz  模拟器源码（含 --host 宿主模式和本地联机补丁）
+    build.sh            在目标机器上重新编译模拟器的脚本
+
+
+----------------------------------------------------------------
+ 二、快速开始（Linux 服务器）
+----------------------------------------------------------------
+ 1. 装 Node.js 18+（Debian/Ubuntu）：
+      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      sudo apt install -y nodejs
+
+ 2. 解压到任意目录，例如 /opt/MM3-Server
+
+ 3. 按需修改 config.ini（见第三节），然后启动：
+      cd /opt/MM3-Server
+      chmod +x start.sh
+      ./start.sh
+    后台运行：
+      nohup ./start.sh > server.log 2>&1 &
+
+ 4. 浏览器打开 http://<服务器IP>:18090/
+    一个人“创建并进入”，另一个人在同一地址“加入”。
+
+ 5. 防火墙/安全组放行 TCP 18090。
+    公网玩：路由器端口映射 18090，或用 frp / cloudflared。
+
+
+----------------------------------------------------------------
+ 三、config.ini 怎么配（重点：画面质量）
+----------------------------------------------------------------
+ [server] port            网页端口，默认 18090
+ [game]   rom             游戏 ROM 路径（相对本目录）
+          exe             模拟器路径，留空=emulator/melonDS
+          instances       每房间实例数，对战固定 2
+ [quality]
+          jpeg_quality    画面清晰度 1-100
+                          · 低配 40~55（4 核 ARM 实测 55 刚好）
+                          · 中配 60~75（8 核 x86）
+                          · 高配 80~95（12 核以上，接近无损）
+          fps             推流帧率 10-60
+                          · 低配 20~30
+                          · 中配 40~50
+                          · 高配 60（NDS 原生帧率，最跟手）
+          audio           1=推声音，0=不推（省带宽）
+
+ 换到高配电脑后，建议直接：
+          jpeg_quality = 85
+          fps = 60
+ 然后重启 start.sh。
+
+ 一台机器能带几个房间（每个房间 2 个实例）：
+   4 核 3.9G ARM   → 1 个房间（实测约 285% CPU / 29fps）
+   8 核 x86        → 约 2 个房间
+   16 核 x86       → 约 4 个房间
+
+
+----------------------------------------------------------------
+ 四、换成其它架构的服务器（x86_64 / ARM64）
+----------------------------------------------------------------
+ 包里自带两套 Linux 预编译版本：
+   · emulator/linux-arm64/melonDS   Debian 12 aarch64（Qt 6.4）
+   · emulator/linux-x86_64/melonDS  Ubuntu 22.04 x86_64（Qt 6.2）
+ start.sh 会按 uname -m 自动挑对应的那个。
+ 如果是别的发行版/架构（Qt 版本不兼容时会报找不到库），用源码重编一次即可：
+
+     sudo apt install -y build-essential cmake ninja-build pkg-config \
+         libsdl2-dev libegl-dev libgl-dev extra-cmake-modules \
+         qt6-base-dev qt6-multimedia-dev
+     tar -xzf source/melonDS-src.tar.gz -C /opt
+     cd /opt/melonDS_CHN && sh ../MM3-Server/source/build.sh
+
+ 编完把路径写进 config.ini：
+     exe = /opt/melonDS_CHN/build/melonDS
+
+ 注意：
+   · 必须保留 OpenGL 渲染器（默认开），运行时靠配置走软件渲染，不需要显卡
+   · 内存小于 4G 的机器编译请用 -j2，LTO 链接很吃内存
+
+
+----------------------------------------------------------------
+ 五、常见问题
+----------------------------------------------------------------
+ 页面打不开
+     ss -lntp | grep 18090      # 端口有没有监听
+     tail -50 server.log        # 启动日志
+
+ 房间一直“连接中”
+     看日志里有没有 [host xxxx] 输出；模拟器没起来通常是
+     exe 路径不对，或 QT_QPA_PLATFORM 没设成 offscreen
+
+ 黑屏但日志有帧
+     浏览器换 Chrome / Edge；Safari 旧版本可能不支持部分 API
+
+ 没声音
+     页面右上角 🔊 点一下（浏览器要求先有一次点击才允许播放），
+     再确认 config.ini 里 audio = 1
+
+ 存档怎么换
+     直接替换 roms/mm3cn.sav（1P）和 roms/mm3cn.sav.2（2P），
+     进入游戏后在标题菜单选“开始冒险”即可继续。
+     网页端也支持上传存档：大厅右侧“我的存档”。
+
+ 离开房间后进程还在？
+     房间无人会立即销毁；直接关页面会等 20 秒。
+     兜底：模拟器不响应 shutdown 时 2 秒后强杀。
+
+
+----------------------------------------------------------------
+ 六、协议（二次开发用）
+----------------------------------------------------------------
+ 网页 ↔ 服务端：WebSocket /ws?room=&slot=&token=
+   二进制帧：[slot u8][type u8][payload]
+     type 1 = JPEG 画面（256x384，上下屏拼接）
+     type 2 = PCM 音频（s16le / 48kHz / 立体声 / ~30ms）
+   文本：{"t":"input","keys":<bitmask>,"touch":{x,y,p}}
+
+ 服务端 ↔ 模拟器宿主：TCP 127.0.0.1:7100+
+   帧：[type u8][slot u8][seq u32 BE][len u32 BE][payload]
+   控制：逐行 JSON（input / reset / pause / resume / shutdown）
+
+ 按键位：A=1 B=2 Select=4 Start=8 Right=16 Left=32 Up=64 Down=128
+         R=256 L=512 X=1024 Y=2048

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#14161a" />
+<title>MM3 联机对战平台</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header id="topbar">
+  <h1>重装机兵3 · 联机对战</h1>
+  <div id="userbar"></div>
+</header>
+
+<main>
+  <!-- 登录 -->
+  <section id="view-login" class="view">
+    <div class="card narrow">
+      <h2>输入昵称进入</h2>
+      <input id="login-name" maxlength="16" placeholder="昵称" autocomplete="off" />
+      <button id="btn-login" class="primary">进入</button>
+      <p class="hint">无需密码；昵称用于房间列表和战绩统计。</p>
+    </div>
+  </section>
+
+  <!-- 大厅 -->
+  <section id="view-lobby" class="view hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>房间列表</h2>
+        <div id="room-list" class="room-list"></div>
+        <button id="btn-refresh">刷新</button>
+      </div>
+      <div class="card">
+        <h2>创建房间</h2>
+        <input id="room-name" maxlength="24" placeholder="房间名（可空）" />
+        <div class="row">
+          <label>存档</label>
+          <select id="save-select"><option value="">不使用存档</option></select>
+        </div>
+        <button id="btn-create" class="primary">创建并进入</button>
+        <hr />
+        <h3>我的存档</h3>
+        <input type="file" id="save-file" accept=".sav" />
+        <button id="btn-upload">上传存档</button>
+        <div id="save-info" class="hint"></div>
+        <hr />
+        <h3>我的战绩</h3>
+        <div id="stats" class="hint"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>怎么玩</h2>
+      <p class="hint">
+        1. 一人创建房间，另一人在列表里点“加入”，两人会分别控制 1P / 2P。<br />
+        2. 进入游戏后，触摸下屏或按“A”开始；联机对战请两边都走到游戏里的联机菜单。<br />
+        3. 键盘、手柄、手机虚拟按键都可以操作，进游戏后点“⌨”可以自己改键。
+      </p>
+    </div>
+  </section>
+
+  <!-- 游戏 -->
+  <section id="view-game" class="view hidden">
+    <div id="game-root">
+      <div class="pad-side pad-left">
+        <button data-key="l" class="k shoulder">L</button>
+        <div class="dpad">
+          <button data-key="up" class="k up">▲</button>
+          <button data-key="left" class="k left">◀</button>
+          <button data-key="right" class="k right">▶</button>
+          <button data-key="down" class="k down">▼</button>
+        </div>
+        <button data-key="select" class="k sys">SELECT</button>
+      </div>
+
+      <div class="screen-col">
+        <div class="screen-box">
+          <canvas id="screen" width="256" height="384"></canvas>
+          <div id="conn-state" class="conn-state"></div>
+        </div>
+        <div class="toolbar">
+          <button id="btn-audio" class="tool" title="声音开关">🔊</button>
+          <button id="btn-full" class="tool" title="全屏">⛶</button>
+          <button id="btn-keys" class="tool" title="按键设置">⌨</button>
+          <button id="btn-restart" class="tool" title="重启模拟器">⟳</button>
+          <button id="btn-leave" class="tool danger">离开</button>
+        </div>
+      </div>
+
+      <div class="pad-side pad-right">
+        <button data-key="r" class="k shoulder">R</button>
+        <div class="abxy">
+          <button data-key="x" class="k x">X</button>
+          <button data-key="y" class="k y">Y</button>
+          <button data-key="a" class="k a">A</button>
+          <button data-key="b" class="k b">B</button>
+        </div>
+        <button data-key="start" class="k sys">START</button>
+      </div>
+    </div>
+
+    <!-- 按键设置 -->
+    <div id="keypanel" class="panel hidden">
+      <div class="panel-box">
+        <div class="panel-head">
+          <h2>按键映射</h2>
+          <button id="btn-keyclose" class="tool">✕</button>
+        </div>
+        <p class="hint">点“键盘”或“手柄”后再按一下对应的键/手柄按钮即可绑定；Esc 取消。设置只保存在本机浏览器。</p>
+        <div id="keylist" class="keylist"></div>
+        <div class="panel-foot">
+          <button id="btn-keyreset">恢复默认</button>
+          <button id="btn-keydone" class="primary">完成</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

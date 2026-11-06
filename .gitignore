@@ -1,0 +1,18 @@
+node_modules/
+data/
+.cache/
+*.log
+
+# 游戏 ROM / 存档 不进仓库
+roms/*.nds
+roms/*.sav
+roms/*.sav.*
+roms/*.zip
+roms/*.7z
+
+# 本机配置
+config.ini
+
+# 测试产物
+shots/
+.chrome-tmp*/

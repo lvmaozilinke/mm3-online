@@ -1,0 +1,13 @@
+; 本机开发用配置（发行包请用 MM3-Server/config.ini）
+[server]
+port = 8090
+
+[game]
+rom = roms/mm3cn.nds
+exe = ../Project/melonDS_CHN/build/melonDS.exe
+instances = 2
+
+[quality]
+jpeg_quality = 55
+fps = 30
+audio = 1

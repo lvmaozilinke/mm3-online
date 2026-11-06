@@ -1,0 +1,191 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  background: #14161a; color: #e8eaed; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: #1c1f26; border-bottom: 1px solid #2a2f38;
+}
+header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+#userbar { font-size: 13px; color: #9aa4b2; }
+#userbar a { color: #7fb0ff; text-decoration: none; }
+main { max-width: 1100px; margin: 0 auto; padding: 14px; }
+.view.hidden { display: none; }
+.card {
+  background: #1b1e24; border: 1px solid #2a2f38; border-radius: 10px;
+  padding: 14px; margin-bottom: 14px;
+}
+.card.narrow { max-width: 380px; margin: 8vh auto; }
+.card h2 { font-size: 15px; margin: 0 0 10px; }
+.card h3 { font-size: 13px; margin: 10px 0 6px; color: #b9c2cf; }
+.grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+input, select, button { font: inherit; }
+input, select {
+  width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px;
+  border: 1px solid #333a45; background: #121419; color: #e8eaed;
+}
+button {
+  padding: 10px 14px; border-radius: 8px; border: 1px solid #3a4250;
+  background: #2a3140; color: #e8eaed; cursor: pointer; touch-action: manipulation;
+}
+button:hover { background: #333c4d; }
+button:active { transform: translateY(1px); }
+button.primary { background: #2f6fed; border-color: #2f6fed; }
+button.danger { background: #5a2323; border-color: #7a2f2f; }
+.hint { color: #8b95a5; font-size: 12px; line-height: 1.6; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row label { font-size: 13px; color: #9aa4b2; white-space: nowrap; }
+hr { border: none; border-top: 1px solid #2a2f38; margin: 12px 0; }
+.room-list { display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+.room {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #121419; border: 1px solid #2a2f38; border-radius: 8px; padding: 8px 10px;
+}
+.room .meta { font-size: 12px; color: #8b95a5; }
+.room .name { font-size: 14px; }
+
+/* ================= 游戏界面 ================= */
+body[data-view="game"] { overflow: hidden; height: 100dvh; }
+body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh - 42px); }
+#view-game { height: 100%; }
+
+#game-root {
+  display: grid; height: 100%;
+  grid-template-columns: minmax(0, 200px) auto minmax(0, 200px);
+  grid-template-areas: "left screen right";
+  align-items: center; justify-items: center; justify-content: center;
+  gap: clamp(8px, 2vw, 32px);
+  padding: 6px 10px;
+  user-select: none;
+}
+.pad-left { grid-area: left; }
+.pad-right { grid-area: right; }
+.screen-col { grid-area: screen; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 0; }
+
+.screen-box { position: relative; line-height: 0; }
+#screen {
+  display: block; height: calc(100dvh - 108px); width: auto; max-width: 100%;
+  aspect-ratio: 2 / 3; image-rendering: pixelated;
+  background: #000; border: 1px solid #2a2f38; border-radius: 6px;
+  touch-action: none;
+}
+.conn-state {
+  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+  font-size: 12px; line-height: 1.4; color: #ffd479; text-shadow: 0 1px 3px #000; pointer-events: none;
+}
+.toolbar { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.tool {
+  padding: 6px 10px; font-size: 15px; line-height: 1; border-radius: 8px;
+  background: #222833; border: 1px solid #333a45; min-width: 38px;
+}
+.tool.danger { font-size: 13px; padding: 8px 12px; }
+
+.pad-side {
+  display: flex; flex-direction: column; align-items: center; gap: clamp(6px, 1.4vh, 14px);
+  width: 100%; max-width: 200px;
+}
+.k {
+  user-select: none; touch-action: none; display: flex; align-items: center; justify-content: center;
+  background: #232a36; border: 1px solid #3a4351; color: #dfe5ee;
+  border-radius: 12px; font-weight: 600; padding: 0;
+}
+.k:active, .k.pressed { background: #2f6fed; border-color: #2f6fed; color: #fff; }
+.k.shoulder { width: min(100%, 190px); height: clamp(28px, 5.2vh, 40px); font-size: 14px; }
+.k.sys { width: min(100%, 190px); height: clamp(26px, 5vh, 38px); font-size: 11px; letter-spacing: .5px; }
+
+.dpad {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  width: min(54%, 168px); aspect-ratio: 1; gap: 4px;
+}
+.dpad .k { width: 100%; height: 100%; font-size: 15px; border-radius: 10px; }
+.dpad .up { grid-area: 1 / 2; }
+.dpad .left { grid-area: 2 / 1; }
+.dpad .right { grid-area: 2 / 3; }
+.dpad .down { grid-area: 3 / 2; }
+
+.abxy {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  width: min(56%, 176px); aspect-ratio: 1; gap: 4px;
+}
+.abxy .k { width: 100%; height: 100%; border-radius: 50%; font-size: 17px; }
+.abxy .x { grid-area: 1 / 2; }
+.abxy .y { grid-area: 2 / 1; }
+.abxy .a { grid-area: 2 / 3; }
+.abxy .b { grid-area: 3 / 2; }
+
+/* ---------- 手机竖屏：画面在上，方向键左 / ABXY 右 ---------- */
+@media (orientation: portrait) {
+  body[data-view="game"] main { height: calc(100dvh - 42px); }
+  #game-root {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "screen screen" "left right";
+    grid-template-rows: auto auto;
+    align-content: start;
+    gap: 6px 8px;
+    padding: 4px 8px 8px;
+  }
+  #screen { height: auto; width: auto; max-height: 46dvh; max-width: min(94vw, 62dvh); }
+  .screen-col { justify-content: flex-start; gap: 4px; }
+  .pad-left { justify-content: flex-start; }
+  .pad-right { justify-content: flex-start; }
+  .pad-side { gap: 7px; max-width: none; }
+  .dpad { width: min(40vw, 150px); }
+  .abxy { width: min(42vw, 158px); }
+  .k.shoulder { height: 30px; max-width: 42vw; }
+  .k.sys { height: 28px; max-width: 42vw; }
+  .tool { padding: 5px 8px; font-size: 14px; min-width: 34px; }
+}
+
+/* ---------- 手机横屏：左边方向键，中间画面，右边 ABXY ---------- */
+@media (orientation: landscape) and (max-height: 620px) {
+  header#topbar { display: none; }
+  body[data-view="game"] main { height: 100dvh; }
+  #game-root { padding: 4px 8px; gap: 8px; grid-template-columns: minmax(0, 168px) auto minmax(0, 168px); }
+  #screen { height: calc(100dvh - 62px); }
+  .pad-side { gap: 6px; max-width: 168px; }
+  .dpad { width: min(42vw, 44vh); }
+  .abxy { width: min(44vw, 46vh); }
+  .k.shoulder { height: 26px; font-size: 12px; max-width: 100%; }
+  .k.sys { height: 24px; font-size: 10px; max-width: 100%; }
+  .tool { padding: 5px 8px; font-size: 13px; min-width: 32px; }
+  .tool.danger { font-size: 12px; padding: 6px 10px; }
+}
+
+/* ---------- 桌面：别把按键拉太大 ---------- */
+@media (orientation: landscape) and (min-height: 621px) {
+  .pad-side { max-width: 220px; }
+  .dpad { width: min(62%, 190px); }
+  .abxy { width: min(64%, 196px); }
+}
+
+/* ================= 按键设置面板 ================= */
+.panel {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 10, 14, .72); backdrop-filter: blur(2px); padding: 12px;
+}
+.panel.hidden { display: none; }
+.panel-box {
+  width: min(520px, 100%); max-height: 86dvh; overflow: auto;
+  background: #1b1e24; border: 1px solid #2f3640; border-radius: 12px; padding: 14px;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.panel-head h2 { margin: 0; font-size: 15px; }
+.panel-foot { display: flex; gap: 10px; margin-top: 12px; }
+.panel-foot button { flex: 1; }
+.keylist { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.keyrow {
+  display: grid; grid-template-columns: 64px 1fr auto auto; gap: 8px; align-items: center;
+  background: #121419; border: 1px solid #2a2f38; border-radius: 8px; padding: 6px 8px; font-size: 13px;
+}
+.keyrow .btname { color: #cfd6e0; }
+.keyrow .bind {
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #9fd0ff;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.keyrow button { padding: 5px 8px; font-size: 12px; }
+.keyrow.learning { border-color: #2f6fed; background: #17233c; }
+.keyrow.learning .bind { color: #ffd479; }
