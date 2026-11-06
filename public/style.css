@@ -129,7 +129,7 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
     gap: 6px 8px;
     padding: 4px 8px 8px;
   }
-  #screen { height: auto; width: auto; max-height: 46dvh; max-width: min(94vw, 62dvh); }
+  #screen { height: auto; width: auto; max-height: 60dvh; max-width: min(96vw, 66dvh); }
   .screen-col { justify-content: flex-start; gap: 4px; }
   .pad-left { justify-content: flex-start; }
   .pad-right { justify-content: flex-start; }
@@ -172,6 +172,25 @@ body.immersive #view-game {
 }
 body.immersive #game-root { height: 100dvh; padding-top: env(safe-area-inset-top, 0px); }
 body.immersive .perf { display: none; }
+
+/* 沉浸模式下把画面放到最大，按键压缩，尽量多给游戏画面 */
+body.immersive #game-root { gap: 4px; padding: 2px 4px; }
+body.immersive .screen-col { gap: 2px; }
+body.immersive #screen { max-height: 71dvh; max-width: min(99vw, 74dvh); }
+body.immersive .toolbar { gap: 4px; }
+body.immersive .tool { padding: 4px 7px; font-size: 13px; min-width: 30px; }
+body.immersive .tool.danger { font-size: 12px; padding: 5px 9px; }
+body.immersive .pad-side { gap: 5px; }
+body.immersive .dpad { width: min(31vw, 118px); }
+body.immersive .abxy { width: min(33vw, 126px); }
+body.immersive .k.shoulder, body.immersive .k.sys { height: 22px; font-size: 11px; }
+
+@media (orientation: landscape) {
+  body.immersive #screen { max-height: calc(100dvh - 44px); max-width: 52vw; }
+  body.immersive .pad-side { max-width: 150px; }
+  body.immersive .dpad { width: min(18vw, 140px); }
+  body.immersive .abxy { width: min(20vw, 148px); }
+}
 
 /* ================= 按键设置面板 ================= */
 .panel {

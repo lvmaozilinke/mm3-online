@@ -109,6 +109,7 @@ roms/         放 ROM 和存档（内容不进仓库）
 - [服务器部署记录](docs/服务器部署记录.md)（两台实机、依赖清单、实测数据）
 - [NAS 部署（aarch64）](docs/NAS_部署.md)
 - [公网联机方案](docs/WAN_联机方案.md)
+- [网络访问与 IPv6 直连](docs/网络访问.md)（IPv6、DDNS、防火墙、Tailscale/frp/Cloudflare）
 
 ## 协议速查
 
