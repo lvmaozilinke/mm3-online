@@ -124,72 +124,47 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
   #game-root {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "screen screen" "left right";
-    grid-template-rows: auto auto;
-    align-content: start;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: stretch;
     gap: 6px 8px;
-    padding: 4px 8px 8px;
+    padding: 10px 10px calc(26px + env(safe-area-inset-bottom, 0px));
   }
-  #screen { height: auto; width: auto; max-height: 60dvh; max-width: min(96vw, 66dvh); }
-  .screen-col { justify-content: flex-start; gap: 4px; }
+  .screen-col { min-height: 0; justify-content: flex-start; gap: 4px; }
+  .screen-box { display: flex; align-items: center; justify-content: center; }
+  #screen { height: auto; width: auto; max-height: 58dvh; max-width: min(96vw, 64dvh); }
   .pad-left { justify-content: flex-start; }
   .pad-right { justify-content: flex-start; }
-  .pad-side { gap: 7px; max-width: none; }
-  .dpad { width: min(40vw, 150px); }
-  .abxy { width: min(42vw, 158px); }
-  .k.shoulder { height: 30px; max-width: 42vw; }
-  .k.sys { height: 28px; max-width: 42vw; }
+  .pad-side { gap: 2.2vh; max-width: none; }
+  .dpad { width: min(38vw, 21vh); }
+  .abxy { width: min(40vw, 22vh); }
+  .k.shoulder { height: 4.2vh; max-width: 42vw; }
+  .k.sys { height: 4vh; max-width: 42vw; }
   .tool { padding: 5px 8px; font-size: 14px; min-width: 34px; }
 }
 
 /* ---------- 手机横屏：左边方向键，中间画面，右边 ABXY ---------- */
-@media (orientation: landscape) and (max-height: 620px) {
+@media (orientation: landscape) {
   header#topbar { display: none; }
   body[data-view="game"] main { height: 100dvh; }
-  #game-root { padding: 4px 8px; gap: 8px; grid-template-columns: minmax(0, 168px) auto minmax(0, 168px); }
-  #screen { height: calc(100dvh - 62px); }
-  .pad-side { gap: 6px; max-width: 168px; }
-  .dpad { width: min(42vw, 44vh); }
-  .abxy { width: min(44vw, 46vh); }
-  .k.shoulder { height: 26px; font-size: 12px; max-width: 100%; }
-  .k.sys { height: 24px; font-size: 10px; max-width: 100%; }
-  .tool { padding: 5px 8px; font-size: 13px; min-width: 32px; }
-  .tool.danger { font-size: 12px; padding: 6px 10px; }
+  #game-root { display: block; position: relative; height: 100dvh; width: 100vw; padding: 0; }
+  .screen-col { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  body.sbs #screen { height: auto; max-height: calc(100dvh - 76px); max-width: 96vw; }
+  .pad-side { position: absolute; bottom: 22px; width: 120px; max-width: none; gap: 5px; z-index: 5; opacity: .95; }
+  .pad-left { left: 28px; align-items: center; }
+  .pad-right { right: 28px; align-items: center; }
+  .dpad { width: 112px; }
+  .abxy { width: 116px; }
+  .k.shoulder, .k.sys { width: 112px; height: 22px; font-size: 10px; }
+  .toolbar { position: absolute; top: 12px; right: 18px; z-index: 6; }
+  .tool { padding: 4px 7px; font-size: 13px; min-width: 30px; }
+  .tool.danger { font-size: 12px; padding: 5px 9px; }
+  .perf { display: none; }
 }
 
-/* ---------- 桌面：别把按键拉太大 ---------- */
-@media (orientation: landscape) and (min-height: 621px) {
-  .pad-side { max-width: 220px; }
-  .dpad { width: min(62%, 190px); }
-  .abxy { width: min(64%, 196px); }
-}
-
-/* ---------- 手机沉浸全屏（不用浏览器原生全屏） ---------- */
-body.immersive #topbar { display: none; }
-body.immersive main { max-width: none; height: 100dvh; padding: 0; }
-body.immersive #view-game {
-  position: fixed; inset: 0; z-index: 100; background: #14161a;
-  height: 100dvh; width: 100vw; overflow: hidden;
-}
-body.immersive #game-root { height: 100dvh; padding-top: env(safe-area-inset-top, 0px); }
-body.immersive .perf { display: none; }
-
-/* 沉浸模式下把画面放到最大，按键压缩，尽量多给游戏画面 */
-body.immersive #game-root { gap: 4px; padding: 2px 4px; }
-body.immersive .screen-col { gap: 2px; }
-body.immersive #screen { max-height: 71dvh; max-width: min(99vw, 74dvh); }
-body.immersive .toolbar { gap: 4px; }
-body.immersive .tool { padding: 4px 7px; font-size: 13px; min-width: 30px; }
-body.immersive .tool.danger { font-size: 12px; padding: 5px 9px; }
-body.immersive .pad-side { gap: 5px; }
-body.immersive .dpad { width: min(31vw, 118px); }
-body.immersive .abxy { width: min(33vw, 126px); }
-body.immersive .k.shoulder, body.immersive .k.sys { height: 22px; font-size: 11px; }
-
+/* 左右双屏（横屏 / 旋转模式） */
+body.sbs #screen { aspect-ratio: 8 / 3; }
 @media (orientation: landscape) {
-  body.immersive #screen { max-height: calc(100dvh - 44px); max-width: 52vw; }
-  body.immersive .pad-side { max-width: 150px; }
-  body.immersive .dpad { width: min(18vw, 140px); }
-  body.immersive .abxy { width: min(20vw, 148px); }
+  body.sbs #screen { height: calc(100dvh - 62px); width: auto; max-width: 94vw; }
 }
 
 /* ================= 按键设置面板 ================= */

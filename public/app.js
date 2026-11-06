@@ -261,21 +261,31 @@ function playPcm(u8) {
   state.audioQueued++;
 }
 
+// 横屏/旋转模式使用「左右双屏」布局，画面比上下叠放大一倍
+function useSideBySide() {
+  return window.innerWidth > window.innerHeight;
+}
+function syncSbsClass() {
+  document.body.classList.toggle('sbs', useSideBySide());
+}
+
 // 让画布的后备像素尺寸跟上显示尺寸，避免大窗口下 CSS 放大导致的卡顿
 function setupCanvasSize() {
   const cv = $('#screen');
   if (!cv || !window.ResizeObserver) return;
   const fit = () => {
-    const r = cv.getBoundingClientRect();
+    const r = { width: cv.offsetWidth, height: cv.offsetHeight };
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cap = (QMODES[state.qmode] || QMODES.auto).cap;
+    const ratio = useSideBySide() ? (8 / 3) : (2 / 3);
     let h = Math.min(Math.round(r.height * dpr), cap, 1536);
     if (!r.width || !h) return;
-    let w = Math.round(h / 1.5);
-    w = Math.max(256, Math.min(w, 1024));
-    h = Math.max(384, Math.round(w * 1.5));
+    let w = Math.round(h * ratio);
+    w = Math.max(256, Math.min(w, 2048));
+    h = Math.max(192, Math.round(w / ratio));
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
   };
+  syncSbsClass();
   if (state.canvasRO) state.canvasRO.disconnect();
   state.canvasRO = new ResizeObserver(fit);
   state.canvasRO.observe(cv);
@@ -286,7 +296,7 @@ function setupCanvasSize() {
 function adaptResolution() {
   const cv = $('#screen');
   if (!cv || !state.drawMs || state.qmode !== 'auto') return;
-  const r = cv.getBoundingClientRect();
+  const r = { width: cv.offsetWidth, height: cv.offsetHeight };
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const nativeW = Math.min(Math.round(r.width * dpr), 1024);
   const nativeH = Math.min(Math.round(r.height * dpr), 1536);
@@ -337,8 +347,17 @@ function enterGame(room, slot, token) {
         const ctx = screenCtx();
         // 直接画到画布真实像素尺寸：CSS 不再做逐帧放大，窗口最大化也不掉帧
         const t0 = performance.now();
-        if (cv.width !== 256 || cv.height !== 384) ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
-        else ctx.drawImage(bmp, 0, 0, 256, 384);
+        const W = cv.width, H = cv.height;
+        if (useSideBySide()) {
+          // 左：上屏(0,0,256,192)  右：下屏(0,192,256,192)
+          const halfW = Math.round(W / 2);
+          ctx.drawImage(bmp, 0, 0, 256, 192, 0, 0, halfW, H);
+          ctx.drawImage(bmp, 0, 192, 256, 192, halfW, 0, W - halfW, H);
+        } else if (W !== 256 || H !== 384) {
+          ctx.drawImage(bmp, 0, 0, W, H);
+        } else {
+          ctx.drawImage(bmp, 0, 0, 256, 384);
+        }
         state.drawMs = state.drawMs * 0.8 + (performance.now() - t0) * 0.2;
         bmp.close && bmp.close();
         $('#conn-state').textContent = '';
@@ -493,8 +512,15 @@ function bindControls() {
   const canvas = $('#screen');
   const toTouch = (e) => {
     const r = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - r.left) / r.width * 256);
-    const y = Math.floor((e.clientY - r.top) / r.height * 384);
+    const fx = (e.clientX - r.left) / r.width;
+    const fy = (e.clientY - r.top) / r.height;
+    if (useSideBySide()) {
+      if (fx < 0.5) return null;              // 左半是上屏，不接受触摸
+      return { x: Math.max(0, Math.min(255, Math.floor((fx - 0.5) * 2 * 256))),
+               y: Math.max(0, Math.min(191, Math.floor(fy * 192))), p: 1 };
+    }
+    const x = Math.floor(fx * 256);
+    const y = Math.floor(fy * 384);
     if (y < 192) return null;
     return { x: Math.max(0, Math.min(255, x)), y: Math.max(0, Math.min(191, y - 192)), p: 1 };
   };
@@ -630,20 +656,20 @@ function cycleQMode() {
 }
 
 function toggleFullscreen() {
-  // 手机上不用浏览器原生全屏：部分手机浏览器会把网页当成视频，弹出“倍速/投屏”之类的悬浮提示。
-  // 改用 CSS 沉浸模式（铺满可视区域），行为可控、不会有额外弹窗。
+  // 手机上不用浏览器原生全屏（部分浏览器会弹出“倍速/投屏”之类的原生悬浮条），
+  // 改用 CSS 沉浸模式；画面布局跟随设备方向自动切换（竖屏上下双屏 / 横屏左右双屏）。
   const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   if (coarse || !document.documentElement.requestFullscreen) {
+    document.body.classList.remove('rotate90');
     document.body.classList.toggle('immersive');
     const on = document.body.classList.contains('immersive');
-    $('#btn-full').textContent = on ? '⛶' : '⛶';
     $('#btn-full').title = on ? '退出全屏' : '全屏';
+    setTimeout(() => { try { syncSbsClass(); setupCanvasSize(); applyQMode(); } catch (_) {} }, 60);
     return;
   }
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   else document.documentElement.requestFullscreen().catch(() => {});
 }
-
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -678,6 +704,7 @@ window.addEventListener('DOMContentLoaded', () => {
     saveBinds(); stopLearn(); renderKeyPanel();
   };
 
+  window.addEventListener('resize', () => { syncSbsClass(); try { setupCanvasSize(); applyQMode(); } catch (_) {} });
   const tick = () => { pollGamepads(); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
