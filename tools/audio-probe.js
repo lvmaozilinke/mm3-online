@@ -20,12 +20,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   ws.binaryType = 'arraybuffer';
   let pkts = 0, samples = 0, sum = 0, peak = 0, loud = 0;
   const cnt = { 'v0': 0, 'v1': 0, 'a0': 0, 'a1': 0 };
+  const gaps = []; let lastA = 0; const vtimes = [];
   ws.on('open', () => console.log('ws open'));
   ws.on('message', (data) => {
     const u8 = new Uint8Array(data);
     const slot = u8[0], type = u8[1];
     cnt[(type === 1 ? 'v' : 'a') + slot] = (cnt[(type === 1 ? 'v' : 'a') + slot] || 0) + 1;
+    if (type === 1) vtimes.push(Date.now());
     if (type !== 2) return;
+    const nowMs = Date.now();
+    if (lastA) gaps.push(nowMs - lastA);
+    lastA = nowMs;
     pkts++;
     const dv = new DataView(u8.buffer, u8.byteOffset + 2, u8.byteLength - 2);
     for (let i = 0; i + 3 < dv.byteLength; i += 4) {
@@ -39,7 +44,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const DUR = parseInt(process.env.DURATION || '25000', 10);
   await sleep(DUR);
   const rms = samples ? Math.sqrt(sum / samples) : 0;
-  console.log(JSON.stringify({ pkts, samples, rms: Math.round(rms), peak, loudPct: samples ? +(100 * loud / samples).toFixed(1) : 0, cnt, fps: +(cnt.v1 / (DUR / 1000)).toFixed(1) }));
+  console.log(JSON.stringify({ pkts, samples, rms: Math.round(rms), peak, loudPct: samples ? +(100 * loud / samples).toFixed(1) : 0, cnt, fps: +(cnt.v1 / (DUR / 1000)).toFixed(1),
+      gap_p50: gaps.length ? gaps.slice().sort((a,b)=>a-b)[Math.floor(gaps.length*0.5)] : null,
+      gap_p95: gaps.length ? gaps.slice().sort((a,b)=>a-b)[Math.floor(gaps.length*0.95)] : null,
+      gap_max: gaps.length ? Math.max(...gaps) : null,
+      vgap_p95: (()=>{ if(vtimes.length<3) return null; const g=[]; for(let i=1;i<vtimes.length;i++) g.push(vtimes[i]-vtimes[i-1]); g.sort((a,b)=>a-b); return g[Math.floor(g.length*0.95)]; })(),
+      vgap_max: (()=>{ if(vtimes.length<3) return null; let m=0; for(let i=1;i<vtimes.length;i++) m=Math.max(m,vtimes[i]-vtimes[i-1]); return m; })() }));
   ws.close();
   await post(`/api/rooms/${room.id}/leave`, { slot: jb.slot, token: b.token });
   await post(`/api/rooms/${room.id}/leave`, { slot: 0, token: a.token });

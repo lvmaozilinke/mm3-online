@@ -69,7 +69,7 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
 .screen-box { position: relative; line-height: 0; }
 #screen {
   display: block; height: calc(100dvh - 108px); width: auto; max-width: 100%;
-  aspect-ratio: 2 / 3; image-rendering: pixelated;
+  aspect-ratio: 2 / 3; image-rendering: auto;
   background: #000; border: 1px solid #2a2f38; border-radius: 6px;
   touch-action: none;
 }
@@ -78,6 +78,7 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
   font-size: 12px; line-height: 1.4; color: #ffd479; text-shadow: 0 1px 3px #000; pointer-events: none;
 }
 .toolbar { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.perf { font-size: 11px; color: #6b7684; text-align: center; min-height: 14px; user-select: text; }
 .tool {
   padding: 6px 10px; font-size: 15px; line-height: 1; border-radius: 8px;
   background: #222833; border: 1px solid #333a45; min-width: 38px;
@@ -161,6 +162,16 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
   .dpad { width: min(62%, 190px); }
   .abxy { width: min(64%, 196px); }
 }
+
+/* ---------- 手机沉浸全屏（不用浏览器原生全屏） ---------- */
+body.immersive #topbar { display: none; }
+body.immersive main { max-width: none; height: 100dvh; padding: 0; }
+body.immersive #view-game {
+  position: fixed; inset: 0; z-index: 100; background: #14161a;
+  height: 100dvh; width: 100vw; overflow: hidden;
+}
+body.immersive #game-root { height: 100dvh; padding-top: env(safe-area-inset-top, 0px); }
+body.immersive .perf { display: none; }
 
 /* ================= 按键设置面板 ================= */
 .panel {

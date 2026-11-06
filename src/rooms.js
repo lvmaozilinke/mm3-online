@@ -118,14 +118,21 @@ class Room {
     const relay = (type, slot, payload) => {
       if (type === 2 && !this.audio) return;
       const ws = this.clients.get(slot);
-      if (ws && ws.readyState === 1) {
-        // 2 字节头：slot + type(1=视频 2=音频)
-        ws.send(Buffer.concat([Buffer.from([slot, type]), payload]), { binary: true });
-      }
+      if (!ws || ws.readyState !== 1) return;
+      // 客户端网络跟不上时不要无限排队（排队会让延迟越来越大）
+      // 视频：积压超过 512KB 直接丢这一帧；音频：超过 256KB 也丢，避免声音越拖越晚
+      const backlog = ws.bufferedAmount || 0;
+      if (type === 1 && backlog > 512 * 1024) { this.droppedFrames = (this.droppedFrames || 0) + 1; return; }
+      if (type === 2 && backlog > 256 * 1024) return;
+      // 2 字节头：slot + type(1=视频 2=音频)
+      ws.send(Buffer.concat([Buffer.from([slot, type]), payload]), { binary: true });
     };
     emu.on('frame', (slot, jpeg) => { this.frames = (this.frames || 0) + 1; this.lastFrame = Date.now(); relay(1, slot, jpeg); });
     emu.on('audio', (slot, pcm) => { relay(2, slot, pcm); });
-    emu.on('msg', (m) => { this.mgr.log(`[room ${this.id}] host: ${JSON.stringify(m)}`); });
+    emu.on('msg', (m) => {
+      if (m && m.t === 'stats' && Array.isArray(m.speed)) { this.speed = m.speed; return; }
+      this.mgr.log(`[room ${this.id}] host: ${JSON.stringify(m)}`);
+    });
     emu.on('close', () => { this.mgr.log(`[room ${this.id}] host closed`); });
   }
 
@@ -178,6 +185,7 @@ class Room {
       rom: this.rom,
       maxPlayers: this.maxPlayers,
       players: this.players.map((p) => (p ? p.user : null)),
+      speed: this.speed || null,
       started: !!this.emu,
       createdAt: this.createdAt,
     };
