@@ -36,28 +36,40 @@ const getJSON = (u) => new Promise((res, rej) => { http.get(u, (r) => { let d = 
   await sleep(2200);
 
   const measure = async (label) => {
-    const s = await ev(`JSON.stringify((()=>{const c=document.querySelector('#screen').getBoundingClientRect();const g=document.querySelector('#game-root').getBoundingClientRect();const d=document.querySelector('.dpad').getBoundingClientRect();return {cssW:Math.round(c.width),cssH:Math.round(c.height),vh:innerHeight,vw:innerWidth,rootH:Math.round(g.height),dpad:Math.round(d.width),ratio:+(c.height/innerHeight).toFixed(2)};})())`);
+    const s = await ev(`JSON.stringify((()=>{const el=document.querySelector('#screen');const c={width:el.offsetWidth,height:el.offsetHeight};const br=el.getBoundingClientRect();const g=document.querySelector('#game-root').getBoundingClientRect();const d=document.querySelector('.dpad').getBoundingClientRect();return {cssW:Math.round(c.width),cssH:Math.round(c.height),bboxW:Math.round(br.width),bboxH:Math.round(br.height),sbs:document.body.classList.contains('sbs'),vh:innerHeight,vw:innerWidth,rootH:Math.round(g.height),dpad:Math.round(d.width)};})())`);
     console.log(label, s);
-    const r = await send('Page.captureScreenshot', { format: 'png' });
+    console.log('  (capturing ' + label + ')');
+    const r = await Promise.race([
+      send('Page.captureScreenshot', { format: 'png' }),
+      new Promise((res) => setTimeout(() => res({}), 5000)),
+    ]);
     if (r.result && r.result.data) fs.writeFileSync(path.join(OUT, label + '.png'), Buffer.from(r.result.data, 'base64'));
   };
 
-  // 竖屏
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
-  await sleep(400);
-  await ev(`show('game'); setupCanvasSize(); applyQMode(); 1`);
-  await sleep(500);
-  await measure('30-portrait-normal');
-
-  // 竖屏沉浸（模拟手机全屏）
-  await ev(`document.body.classList.add('immersive'); 1`);
-  await sleep(500);
-  await measure('31-portrait-immersive');
-
-  // 横屏沉浸
-  await send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
   await sleep(600);
-  await measure('32-landscape-immersive');
+  await ev(`show('game'); document.body.classList.add('mobile-layout','layout-portrait'); document.body.classList.remove('sbs','rot90'); layoutScreen(); 1`);
+  await sleep(700);
+  await measure('30-portrait-auto');
+
+  // 手动横屏（旋转）模式：只做静态检查，避免无头浏览器在旋转层上卡住
+  await ev(`document.body.classList.add('mobile-layout','layout-landscape','sbs','rot90'); 1`);
+  await sleep(300);
+  console.log('rotate90 classes:', await ev(`JSON.stringify({rot:document.body.classList.contains('rot90'),sbs:document.body.classList.contains('sbs')})`));
+  await ev(`document.body.classList.remove('rot90','layout-landscape'); document.body.classList.add('layout-portrait'); setupCanvasSize(); 1`);
+  await sleep(200);
+
+  await send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
+  await sleep(700);
+  await ev(`document.body.classList.add('mobile-layout','layout-landscape','sbs'); document.body.classList.remove('layout-portrait','rot90'); layoutScreen(); 1`);
+  await sleep(500);
+  await measure('32-device-landscape');
+
+  await send('Emulation.setDeviceMetricsOverride', { width: 360, height: 640, deviceScaleFactor: 2, mobile: true });
+  await sleep(600);
+  await ev(`document.body.classList.add('mobile-layout','layout-portrait'); document.body.classList.remove('sbs','rot90'); layoutScreen(); 1`);
+  await sleep(500);
+  await measure('33-small-portrait');
 
   ws.close(); chrome.kill(); await sleep(200); process.exit(0);
 })();

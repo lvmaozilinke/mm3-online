@@ -118,53 +118,65 @@ body[data-view="game"] main { padding: 0; max-width: none; height: calc(100dvh -
 .abxy .a { grid-area: 2 / 3; }
 .abxy .b { grid-area: 3 / 2; }
 
-/* ---------- 手机竖屏：画面在上，方向键左 / ABXY 右 ---------- */
-@media (orientation: portrait) {
-  body[data-view="game"] main { height: calc(100dvh - 42px); }
-  #game-root {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas: "screen screen" "left right";
-    grid-template-rows: minmax(0, 1fr) auto;
-    align-content: stretch;
-    gap: 6px 8px;
-    padding: 10px 10px calc(26px + env(safe-area-inset-bottom, 0px));
-  }
-  .screen-col { min-height: 0; justify-content: flex-start; gap: 4px; }
-  .screen-box { display: flex; align-items: center; justify-content: center; }
-  #screen { height: auto; width: auto; max-height: 58dvh; max-width: min(96vw, 64dvh); }
-  .pad-left { justify-content: flex-start; }
-  .pad-right { justify-content: flex-start; }
-  .pad-side { gap: 2.2vh; max-width: none; }
-  .dpad { width: min(38vw, 21vh); }
-  .abxy { width: min(40vw, 22vh); }
-  .k.shoulder { height: 4.2vh; max-width: 42vw; }
-  .k.sys { height: 4vh; max-width: 42vw; }
-  .tool { padding: 5px 8px; font-size: 14px; min-width: 34px; }
-}
+/* ================= 手机布局：按键悬浮在画面上 ================= */
+body.mobile-layout #game-root { position: relative; display: block; height: 100%; width: 100%; padding: 0; }
+body.mobile-layout header#topbar { display: none; }
+body.mobile-layout main { height: 100dvh; padding: 0; max-width: none; }
+body.mobile-layout #view-game { height: 100%; }
+body.mobile-layout .screen-col { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+/* 画布尺寸由 JS(layoutScreen) 精确计算 */
+body.mobile-layout #screen { max-width: none; max-height: none; height: auto; width: auto; }
 
-/* ---------- 手机横屏：左边方向键，中间画面，右边 ABXY ---------- */
-@media (orientation: landscape) {
-  header#topbar { display: none; }
-  body[data-view="game"] main { height: 100dvh; }
-  #game-root { display: block; position: relative; height: 100dvh; width: 100vw; padding: 0; }
-  .screen-col { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-  body.sbs #screen { height: auto; max-height: calc(100dvh - 76px); max-width: 96vw; }
-  .pad-side { position: absolute; bottom: 22px; width: 120px; max-width: none; gap: 5px; z-index: 5; opacity: .95; }
-  .pad-left { left: 28px; align-items: center; }
-  .pad-right { right: 28px; align-items: center; }
-  .dpad { width: 112px; }
-  .abxy { width: 116px; }
-  .k.shoulder, .k.sys { width: 112px; height: 22px; font-size: 10px; }
-  .toolbar { position: absolute; top: 12px; right: 18px; z-index: 6; }
-  .tool { padding: 4px 7px; font-size: 13px; min-width: 30px; }
-  .tool.danger { font-size: 12px; padding: 5px 9px; }
-  .perf { display: none; }
+body.mobile-layout .pad-side {
+  position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: 128px; gap: 6px; z-index: 5;
 }
+body.mobile-layout .pad-left { left: 10px; align-items: center; }
+body.mobile-layout .pad-right { right: 10px; align-items: center; }
+body.mobile-layout .dpad { width: 128px; height: 128px; max-width: none; }
+body.mobile-layout .abxy { width: 128px; height: 128px; max-width: none; }
+body.mobile-layout .k.shoulder,
+body.mobile-layout .k.sys { width: 128px; width: 100%; height: 22px; font-size: 10px; }
 
-/* 左右双屏（横屏 / 旋转模式） */
-body.sbs #screen { aspect-ratio: 8 / 3; }
-@media (orientation: landscape) {
-  body.sbs #screen { height: calc(100dvh - 62px); width: auto; max-width: 94vw; }
+/* 悬浮按键：低透明度 */
+body.mobile-layout .k {
+  background: rgba(20, 26, 35, 0.40);
+  border-color: rgba(255, 255, 255, 0.20);
+  color: rgba(255, 255, 255, 0.88);
+}
+body.mobile-layout .k:active,
+body.mobile-layout .k.pressed {
+  background: rgba(47, 111, 237, 0.62);
+  border-color: rgba(140, 180, 255, 0.95);
+  color: #fff;
+}
+body.mobile-layout .toolbar {
+  position: absolute; top: calc(8px + env(safe-area-inset-top, 0px));
+  right: 10px; z-index: 6; gap: 5px;
+}
+body.mobile-layout .tool { padding: 4px 7px; font-size: 13px; min-width: 30px; background: rgba(24, 30, 40, .55); }
+body.mobile-layout .tool.danger { font-size: 12px; padding: 5px 9px; }
+body.mobile-layout .perf { display: none; }
+
+body.layout-portrait .pad-side { width: 118px; }
+body.layout-portrait .dpad,
+body.layout-portrait .abxy { width: 118px; height: 118px; }
+body.layout-portrait .k.shoulder,
+body.layout-portrait .k.sys { width: 118px; }
+
+body.layout-landscape .pad-side { width: 116px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+body.layout-landscape .pad-left { left: 26px; }
+body.layout-landscape .pad-right { right: 26px; }
+body.layout-landscape .dpad,
+body.layout-landscape .abxy { width: 116px; height: 116px; }
+
+/* 手动横竖屏切换：整体旋转 90°，与设备方向无关 */
+body.mobile-layout.rot90 { overflow: hidden; }
+body.mobile-layout.rot90 #game-root {
+  position: fixed; left: 50%; top: 50%;
+  width: 100vh; height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
 }
 
 /* ================= 按键设置面板 ================= */

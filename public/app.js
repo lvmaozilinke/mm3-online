@@ -263,7 +263,70 @@ function playPcm(u8) {
 
 // 横屏/旋转模式使用「左右双屏」布局，画面比上下叠放大一倍
 function useSideBySide() {
-  return window.innerWidth > window.innerHeight;
+  return document.body.classList.contains('sbs');
+}
+
+// 手机布局（按键悬浮在画面上）；state.orient: auto / portrait / landscape
+function isCoarse() {
+  return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+         ('ontouchstart' in window);
+}
+
+// 精确计算画布显示尺寸（手机布局），避免 CSS 百分比/内在尺寸互相干扰
+function layoutScreen() {
+  const cv = $('#screen');
+  const root = $('#game-root');
+  if (!cv || !root) return;
+  const mobile = document.body.classList.contains('mobile-layout');
+  if (!mobile) { cv.style.width = ''; cv.style.height = ''; return; }
+  const sbs = document.body.classList.contains('sbs');
+  const ratio = sbs ? (8 / 3) : (2 / 3);
+  const W = root.clientWidth || window.innerWidth;
+  const H = root.clientHeight || window.innerHeight;
+  let w = Math.min(W - 12, (H - 54) * ratio);
+  let h = w / ratio;
+  cv.style.width = Math.round(w) + 'px';
+  cv.style.height = Math.round(h) + 'px';
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+  if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+  if (window.ResizeObserver) { /* 尺寸已定，避免 RO 再改 */ }
+}
+
+function applyOrientation() {
+  const b = document.body;
+  if (!isCoarse()) {
+    b.classList.remove('mobile-layout', 'layout-portrait', 'layout-landscape', 'sbs', 'rot90');
+    return;
+  }
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const deviceLandscape = vw > vh;
+  let layout;
+  if (state.orient === 'portrait') layout = 'portrait';
+  else if (state.orient === 'landscape') layout = 'landscape';
+  else layout = deviceLandscape ? 'landscape' : 'portrait';
+
+  const rot = (layout === 'landscape') !== deviceLandscape;
+
+  b.classList.add('mobile-layout');
+  b.classList.toggle('layout-portrait', layout === 'portrait');
+  b.classList.toggle('layout-landscape', layout === 'landscape');
+  b.classList.toggle('sbs', layout === 'landscape');
+  b.classList.toggle('rot90', rot);
+
+  const btn = $('#btn-orient');
+  if (btn) {
+    btn.textContent = state.orient === 'landscape' ? '⇔' : (state.orient === 'portrait' ? '⇕' : '⟲');
+    btn.title = '屏幕方向：' + ({ auto: '跟随设备', portrait: '强制竖屏', landscape: '强制横屏' })[state.orient] + '（点击切换）';
+  }
+  requestAnimationFrame(() => { try { layoutScreen(); } catch (_) {} });
+}
+
+function cycleOrientation() {
+  const order = ['auto', 'portrait', 'landscape'];
+  state.orient = order[(order.indexOf(state.orient) + 1) % order.length];
+  try { localStorage.setItem('mm3_orient', state.orient); } catch (_) {}
+  applyOrientation();
 }
 function syncSbsClass() {
   document.body.classList.toggle('sbs', useSideBySide());
@@ -274,7 +337,10 @@ function setupCanvasSize() {
   const cv = $('#screen');
   if (!cv || !window.ResizeObserver) return;
   const fit = () => {
-    const r = { width: cv.offsetWidth, height: cv.offsetHeight };
+    if (state.sizing) return;          // 防止 ResizeObserver 自触发死循环
+    const box = cv.parentElement || cv;
+    const r = { width: box.clientWidth, height: box.clientHeight };
+    if (!r.width || !r.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cap = (QMODES[state.qmode] || QMODES.auto).cap;
     const ratio = useSideBySide() ? (8 / 3) : (2 / 3);
@@ -283,9 +349,13 @@ function setupCanvasSize() {
     let w = Math.round(h * ratio);
     w = Math.max(256, Math.min(w, 2048));
     h = Math.max(192, Math.round(w / ratio));
-    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    if (cv.width !== w || cv.height !== h) {
+      state.sizing = true;
+      cv.width = w; cv.height = h;
+      setTimeout(() => { state.sizing = false; }, 60);
+    }
   };
-  syncSbsClass();
+  applyOrientation();
   if (state.canvasRO) state.canvasRO.disconnect();
   state.canvasRO = new ResizeObserver(fit);
   state.canvasRO.observe(cv);
@@ -321,8 +391,8 @@ function enterGame(room, slot, token) {
   show('game');
   $('#conn-state').textContent = '连接中…';
   ensureAudio();
-  setupCanvasSize();
-  applyQMode();
+  applyOrientation();
+  layoutScreen();
   const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws?room=${room.id}&slot=${slot}&token=${token}`);
   ws.binaryType = 'arraybuffer';
   state.ws = ws;
@@ -678,8 +748,11 @@ function escapeHtml(s) {
 window.addEventListener('DOMContentLoaded', () => {
   loadSession();
   loadBinds();
+  applyOrientation();
   try { state.qmode = localStorage.getItem('mm3_qmode') || 'auto'; } catch (_) {}
   if (!QMODES[state.qmode]) state.qmode = 'auto';
+  try { state.orient = localStorage.getItem('mm3_orient') || 'auto'; } catch (_) {}
+  if (!['auto','portrait','landscape'].includes(state.orient)) state.orient = 'auto';
   setUserbar();
   bindControls();
   bindKeyboard();
@@ -695,6 +768,7 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#btn-audio').onclick = toggleAudio;
   $('#btn-full').onclick = toggleFullscreen;
   $('#btn-quality').onclick = cycleQMode;
+  $('#btn-orient').onclick = cycleOrientation;
   $('#btn-keys').onclick = () => { $('#keypanel').classList.remove('hidden'); renderKeyPanel(); };
   $('#btn-keyclose').onclick = () => { stopLearn(); $('#keypanel').classList.add('hidden'); };
   $('#btn-keydone').onclick = () => { stopLearn(); $('#keypanel').classList.add('hidden'); };
@@ -704,7 +778,8 @@ window.addEventListener('DOMContentLoaded', () => {
     saveBinds(); stopLearn(); renderKeyPanel();
   };
 
-  window.addEventListener('resize', () => { syncSbsClass(); try { setupCanvasSize(); applyQMode(); } catch (_) {} });
+  window.addEventListener('resize', () => { applyOrientation(); layoutScreen(); });
+  window.addEventListener('orientationchange', () => setTimeout(applyOrientation, 120));
   const tick = () => { pollGamepads(); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
