@@ -12,6 +12,8 @@ cp -r src public package.json package-lock.json "$OUT/MM3-Server/platform/" 2>/d
 cp config.ini.example "$OUT/MM3-Server/config.ini"
 mkdir -p "$OUT/MM3-Server/roms" "$OUT/MM3-Server/emulator" "$OUT/MM3-Server/source"
 cp roms/README.md "$OUT/MM3-Server/roms/"
+# Windows 免安装运行时（可选）
+if [ -f runtime-node.exe ]; then mkdir -p "$OUT/MM3-Server/runtime"; cp runtime-node.exe "$OUT/MM3-Server/runtime/node.exe"; fi
 
 if [ -x "$EMU_SRC/build/melonDS" ]; then
     arch=$(uname -m)

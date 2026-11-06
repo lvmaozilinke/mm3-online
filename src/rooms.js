@@ -60,9 +60,13 @@ class Room {
     const port = this.mgr.allocPort();
     const hostExe = this.mgr.emulatorExe;
     const saves = this.players.map((p, i) => (p && p.savePath) || '');
+    // 注意：Windows 下非 ASCII 的绝对路径作为参数传给模拟器会被转码搞坏，
+    // 所以把 cwd 设成 ROM 所在目录、只传文件名（文件名保持 ASCII）
+    const romDir = path.dirname(this.rom);
+    const romName = path.basename(this.rom);
     const args = [
       '--host',
-      '--rom', this.rom,
+      '--rom', romName,
       '--instances', String(this.maxPlayers),
       '--port', String(port),
       '--quality', String(this.quality),
@@ -77,7 +81,7 @@ class Room {
           PATH: 'C:/msys64/ucrt64/bin;' + (process.env.PATH || ''),
           SDL_AUDIODRIVER: 'dummy',
         });
-        spawned = spawn(hostExe, args, { cwd: path.dirname(hostExe), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env });
+        spawned = spawn(hostExe, args, { cwd: romDir || path.dirname(hostExe), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env });
         const logline = (d) => { const t = d.toString().trim(); if (t) this.mgr.log(`[host ${this.id}] ${t.slice(0, 400)}`); };
         spawned.stdout.on('data', logline);
         spawned.stderr.on('data', logline);

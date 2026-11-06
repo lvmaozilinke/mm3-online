@@ -24,24 +24,26 @@ melonDS 的 **LocalMP**（同进程共享内存，延迟≈0），所以联机�
 
 ## 快速开始
 
+### 方式 A：直接下载打包好的免安装版（推荐给普通用户）
+
+到 [Releases](https://github.com/lvmaozilinke/mm3-online/releases) 下载 **`MM3-Server-portable.zip`**：
+
+1. 解压到任意目录（**文件夹名可以随便改**，建议用英文路径）
+2. 把《重装机兵3》ROM 放进 `roms/`，文件名改成 `mm3cn.nds`（或改 `config.ini` 的 `game.rom`）
+3. **Windows**：双击 `start.bat`；**Linux**：`./start.sh`
+4. 浏览器打开 `http://127.0.0.1:18090/`，一个人「创建并进入」，另一个人「加入」
+
+包内自带 Node 运行时（Windows）和三个平台的模拟器宿主（Windows / Linux ARM64 / Linux x86_64），
+**不需要安装任何东西**；不包含 ROM / BIOS。
+
+### 方式 B：从源码跑
+
 ```sh
-# 1) Node 18+
-node -v
-
-# 2) 依赖
 npm install --omit=dev
-
-# 3) 放 ROM（不随仓库分发）
 mkdir -p roms && cp /path/to/your.nds roms/mm3cn.nds
-
-# 4) 配置
-cp config.ini.example config.ini   # 改端口 / 画质 / 模拟器路径
-
-# 5) 启动
+cp config.ini.example config.ini
 node src/index.js
 ```
-
-浏览器打开 `http://<服务器IP>:<port>/`，一个人「创建并进入」，另一个人「加入」。
 
 ### 需要模拟器
 
@@ -80,18 +82,23 @@ audio = 1
 
 ## 发行包（Release）
 
-`Releases` 里的 `MM3-Server-多架构.zip` 是开箱即用的服务器包（**不含 ROM**）：
+`Releases` 里的 **`MM3-Server-portable.zip`**（约 78 MB）是开箱即用的免安装包，**不含 ROM**：
 
 ```
-MM3-Server/
-  config.ini
-  start.sh / start.bat        一键启动（自动选架构、自动 offscreen/dummy 音频）
-  platform/                   Node 服务 + 网页 + 依赖
-  emulator/linux-arm64|linux-x86_64/melonDS
-  source/                     模拟器源码
+MM3-Server-portable/
+  config.ini                  端口 / 画质 / 帧率 / 音频 / 路径
+  start.bat                   Windows 一键启动（优先使用自带 node）
+  start.sh                    Linux 一键启动（按 uname -m 选模拟器）
+  runtime/node.exe            Windows 自带 Node 运行时（免安装）
+  platform/                   Node 服务 + 网页 + 依赖（node_modules 已带）
+  emulator/windows/           melonDS.exe + Qt6/SDL2 运行库
+  emulator/linux-arm64/       Linux ARM64 宿主
+  emulator/linux-x86_64/      Linux x86_64 宿主
+  roms/                       放自己的 ROM（存档也在这里）
 ```
 
-解压后把 ROM 放进 `roms/`，改 `config.ini`，`./start.sh` 即可。
+解压 → 放 ROM → `start.bat` / `start.sh`，默认端口 18090。
+模拟器源码不在包里，在 [melonDS_CHN](https://github.com/lvmaozilinke/melonDS_CHN) 仓库。
 
 ## 目录
 
